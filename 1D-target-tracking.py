@@ -2,7 +2,7 @@
 ############################
 # 1D Target Tracking Example
 # Author: Michel Barbeau, Carleton University
-# Version: 2024/02/07
+# Version: 2024/02/11
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,36 +28,38 @@ import matplotlib.pyplot as plt
 
 # number of instants
 n = 10
-# create the variables
-vars = [Integer(f'x_{i}') for i in range(n)]
+maxpos=10
 print("\nNumber of instants: ", n)
+# create the variables, they represent
+X = [Integer(f'x_{i}', lower_bound=0, upper_bound=maxpos) for i in range(n)] # positions and
+V = [Integer(f'v_{i}', lower_bound=-maxpos, upper_bound=maxpos) for i in range(n)] # speed
 
 # generate target's random positions
 rng = np.random.default_rng()
-maxpos=10
 pos = rng.integers(low=0, high=maxpos, size=n)
 print("\nTarget positions: ", pos)
 
 # initialize the CQM object
 cqm = ConstrainedQuadraticModel()
 
-# maximum x-coordinate
-maxxcoord = 2
-print("\nMaximum number of coordinates: ", maxxcoord)
-# add constraint to variables 
-for i in range(len(vars)):
-   # cqm.add_variable('INTEGER', f'x_{i}', lower_bound=0.0, upper_bound=maxpos)
-   cqm.add_variable('INTEGER', f'x_{i}' )
+# add the variables to the model
+for i in range(len(X)):
+   cqm.add_variable('INTEGER', f'x_{i}', lower_bound=0, upper_bound=maxpos)
+   cqm.add_variable('INTEGER', f'v_{i}', lower_bound=-maxpos, upper_bound=maxpos)
 
-# objective: minimize accelaration, in fact speed for now
-obj = -quicksum([((vars[i+1]-vars[i])**2) for i in range(n-1)])
+# objective is to minimize the accelaration
+obj = quicksum([((V[i+1]-V[i])**2) for i in range(n-1)])
 cqm.set_objective(obj)
 
-# constraint: equal number of employees per shift
-maxdx = 4
-for i in range(len(vars)):
-    cqm.add_constraint((vars[i]-pos[i])>=-maxdx, label=f'u_{i}')
-    cqm.add_constraint((vars[i]-pos[i])<=maxdx, label=f'l_{i}')
+# add constraints
+maxdx = 2
+mindx = 2
+for i in range(len(X)-1):
+    cqm.add_constraint(X[i+1]-X[i]-V[i]==0, label=f'p_{i}')
+for i in range(len(X)):
+    cqm.add_constraint((X[i]-pos[i])>=-maxdx, label=f'u_{i}')
+    cqm.add_constraint((X[i]-pos[i])<=maxdx, label=f'l_{i}')
+    cqm.add_constraint((X[i]-pos[i])**2>=mindx**2, label=f'min_{i}')
 
 # Initialize the CQM solver
 sampler = LeapHybridCQMSampler()
@@ -68,19 +70,4 @@ print("\nInfo:", answer.info)
 print("\nSample:", answer.first.sample)
 print("Tracking score:", answer.first.energy)
 
-# plot results
-dx = np.zeros(10)
-for key, val in answer.first.sample.items():
-   v = key.split("_")
-   print("\n", key, val, v)
-   dx[int(v[1])] = val-pos[int(v[1])]
-
-# plot result
-fig, ax = plt.subplots()
-ax.bar(np.arange(n), dx)
-ax.set(xlabel='Time', ylabel='Distance to target')
-ax.set_title('1D Target Tracking')
-fig.suptitle('Max dx is '+str(maxdx))
-plt.grid()
-plt.show()
-
+exit()
