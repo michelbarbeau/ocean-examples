@@ -1,3 +1,3 @@
 # D-Wave Ocean Example(s)
 # 1D and 3D Target Tracking
-![DFLOODExample](https://github.com/michelbarbeau/ocean-examples/blob/main/3DRunTime.jpg)
+![DFLOODExample](https://github.com/michelbarbeau/ocean-examples/blob/main/3DRunTime.png)
