@@ -2,7 +2,7 @@
 ############################
 # 1D Target Tracking Example
 # Author: Michel Barbeau, Carleton University
-# Version: 2024/02/11
+# Version: 2024/08/22
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 """
 Usage: 
-	python3 1D-target-tracking.py
+	python3 quantum-1D-target-tracking.py
 """
 
 from dimod import ConstrainedQuadraticModel, Integer, quicksum
