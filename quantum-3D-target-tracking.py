@@ -1,8 +1,8 @@
 # Copyright 2024 Michel Barbeau
 ############################
-# 1D Target Tracking Example
+# 3D Target Tracking Example
 # Author: Michel Barbeau, Carleton University
-# Version: 2024/03/09
+# Version: 2024/08/25
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 """
 Usage: 
-	python3 3D-target-tracking.py
+	python3 quantum-3D-target-tracking.py
 """
 
 from dimod import ConstrainedQuadraticModel, Integer, quicksum
