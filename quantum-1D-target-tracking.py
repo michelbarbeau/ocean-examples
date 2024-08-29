@@ -2,7 +2,7 @@
 ############################
 # 1D Target Tracking Example
 # Author: Michel Barbeau, Carleton University
-# Version: 2024/08/22
+# Version: 2024/08/28
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,8 +66,26 @@ sampler = LeapHybridCQMSampler()
 
 # Submit for solution
 answer = sampler.sample_cqm(cqm)
+# Print the solution, in dictionary form
 print("\nInfo:", answer.info)
 print("\nSample:", answer.first.sample)
 print("Tracking score:", answer.first.energy)
 
+# Convert chaser's list of positions from dictionary to array
+chaserpositions = [ answer.first.sample.get(f'x_{i}') for i in range(n) ]
+# Print the solution (chaser's positions), 
+# in array form [x_0, x_1,\ldost,n_{n-1}
+print(chaserpositions)
+
+# Validate solution
+smaxdx = maxdx**2
+smindx = mindx**2
+for i in range(n):
+    delta = (chaserpositions[i]-pos[i])**2
+    if delta >= smindx and delta <= smaxdx:
+       continue
+    else:
+        print("*** Invalid solution!\n")
+        exit()
+print("*** Valid solution!\n")
 exit()

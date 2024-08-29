@@ -2,7 +2,7 @@
 ############################
 # 3D Target Tracking Example
 # Author: Michel Barbeau, Carleton University
-# Version: 2024/08/25
+# Version: 2024/08/28
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,10 +69,10 @@ def TargetTracking(n, maxpos):
 
    # add minimum an maximum chaser-target distance constraints
    smin = 1  # chaser-target minimum distance
-   smax = 2  # chaser-target maximum distance
+   smax = 1  # chaser-target maximum distance
    for i in range(n):
       cqm.add_constraint( ( (x[i]-pos[i])**2+(x[i+n]-pos[i+n])**2+(x[i+2*n]-pos[i+2*n])**2 ) <= smax**2, label=f'xmax_{i}')
-      cqm.add_constraint( ( (x[i]-pos[i])**2+(x[i+n]-pos[i+n])**2+(x[i+2*n]-pos[i+2*n])**2 ) >=smin**2, label=f'xmin_{i}')
+      cqm.add_constraint( ( (x[i]-pos[i])**2+(x[i+n]-pos[i+n])**2+(x[i+2*n]-pos[i+2*n])**2 ) >= smin**2, label=f'xmin_{i}')
 
    # Initialize the CQM solver
    # hybrid solver
@@ -80,43 +80,76 @@ def TargetTracking(n, maxpos):
    # Submit for solution
    answer = sampler.sample_cqm(cqm)
 
+   # Convert chaser's list of positions from dictionary to array
+   chaserpositions = [ answer.first.sample.get(f'x_{i}') for i in range(3*n) ]
+   # Print the solution (chaser's positions), 
+   # in array form [x_0,x_1,\dots,x_{n-1},y_0,y_1,\dots,y_{n-1},z_0,z_1,\dots,z_{n-1}]
+   print(chaserpositions)
+
+   # Validate solution
+   smaxdx = smax**2
+   smindx = smin**2
+   Result = True
+   for i in range(n):
+      delta = (chaserpositions[i]-pos[i])**2+(chaserpositions[i+n]-pos[i+n])**2+(chaserpositions[i+2*n]-pos[i+2*n])**2
+      if delta >= smindx and delta <= smaxdx:
+         continue
+      else:
+        print("*** Invalid solution!\n")
+        Result = False
+        break
+  
    # print the directory of information
    # print("\nInfo:", answer.info)
    # print run time
    # print("\nn: ", n, " Run time: ", answer.info['run_time'], " QPU Access Time: ", answer.info['qpu_access_time'])
    # print sample with lowest energy
-   # print("\nSample:", answer.first.sample)
+   print("\nSample:", answer.first.sample)
    # print([math.sqrt( (x[i]-pos[i])**2+(x[i+n]-pos[i+n])**2+(x[i+2*n]-pos[i+2*n])**2) for i in range(n)])
-   # print("Tracking score:", answer.first.energy)
-   return(answer.info['run_time'], answer.info['qpu_access_time'])
+   print("Tracking score:", answer.first.energy)
+
+   return(Result, answer.info['run_time'], answer.info['qpu_access_time'])
 
 ################
 ### Main program
 
-maxpos = 10
-#n = 1000
-#TargetTracking(n, maxpos)
+maxpos = 10 # Size of cubic 3D space
 
-numaverages = 10
-numsamples = 10
-RTaverages = np.zeros(numaverages, dtype=float)
-QPUaverages = np.zeros(numaverages, dtype=float)
+numaverages = 1 # Number of averages
+numsamples = 0 # Number of valid samples used to calculate an average
+maxnumsamples = 2 # Maximum number of valid samples used to calculate an average
+
+RTaverages = np.zeros(numaverages, dtype=float) # Hybrid Comp Run Time
+QPUaverages = np.zeros(numaverages, dtype=float) # QPU Access Time
+
+print("---")
 for i in range(numaverages):
-    T1 = 0
-    T2 = 0
-    print("i: ", i, "\n")
-    for j in range(numsamples):
-         RT, QPU = TargetTracking((i + 1) * 100, maxpos)
-         print(RT, QPU, " ")
-         T1 = T1 + RT
-         T2 = T2 + QPU
-    print("\n")
-    RTaverages[i] = T1 / numsamples
-    QPUaverages[i] = T2 / numsamples
-    print("RTAverage: ", RTaverages[i], "RQPUAverage: ", QPUaverages[i],"\n")
+    T1 = 0 # Hybrid Comp Run Time
+    T2 = 0 # QPU Access Time
+    numberOfPoints = (i + 1) * 10 # number of points used to caclulate this comp time avaerage
+    for j in range(maxnumsamples):
+         # 1st param is number of points
+         # 2nd param is index of maximum position
+         # 3rd param number of obstacles
+         Result, RT, QPU = TargetTracking(numberOfPoints, maxpos)
+         if Result:
+            numsamples = numsamples + 1    
+            T1 = T1 + RT
+            T2 = T2 + QPU
+    if numsamples > 0: # Calculate averages!      
+       RTaverages[i] = T1 / numsamples
+       QPUaverages[i] = T2 / numsamples
+       print("Number of points: ", numberOfPoints)
+       print("Number of samples: ", numsamples)
+       print("RTaverages[i]: ", RTaverages[i])
+       print("RQPUAverages[i]: ", QPUaverages[i])
+    else: # No sample available!
+       print("Number of points: ", numberOfPoints, " - All solutions are invalid!\n")
+    print("---")
 
-print("RT Averages:", RTaverages, "\n")
-print("QPU Averages:", QPUaverages, "\n")
+# Print the arrays
+print("RT Averages:", RTaverages)
+print("QPU Averages:", QPUaverages)
 
 exit()
 
