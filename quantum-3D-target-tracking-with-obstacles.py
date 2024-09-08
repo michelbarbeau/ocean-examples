@@ -2,7 +2,7 @@
 ############################
 # 3D Target Tracking Example
 # Author: Michel Barbeau, Carleton University
-# Version: 2024/08/28
+# Version: 2024/09/07
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,11 @@
 # limitations under the License.
 
 """
+DWAVE OCEAN Install
+    python -m venv ocean
+    . ocean/bin/activate
+    SEE: https://docs.ocean.dwavesys.com/en/latest/overview/install.html
+    
 Usage: 
 	python3 quantum-3D-target-tracking-with-obstacles.py
 """
@@ -63,20 +68,35 @@ def TargetTracking(n, maxpos, m):
    obs = rng.integers(low=0, high=maxpos, size=3*m)
    print("\nObstacles positions:\n", obs)
 
-   # generate target's random positions
+   # Generate target's random positions
    pos = np.zeros(3 * n, dtype=int)
-   pos[0:3] = rng.integers(low=0, high=maxpos, size=3)
-   for i in range(n-1):
+   while True: 
       try:
-         delta = rng.integers(low=-1, high=2, size=[3])  # x,y,z-displacements
-         pos[i + 1] = np.min([np.max([pos[i] + delta[0], 0]), maxpos])
-         pos[i + 1 + n] = np.min([np.max([pos[i + n] + delta[1], 0]), maxpos])
-         pos[i + 1 + 2 * n] = np.min([np.max([pos[i + 2 * n] + delta[2], 5]), maxpos])
-         if isIn(pos, obs):
+         pos[0] = rng.integers(low=0, high=maxpos)
+         pos[n] = rng.integers(low=0, high=maxpos)
+         pos[2*n] = rng.integers(low=0, high=maxpos)   
+         if isIn([pos[0], pos[n],pos[2 * n]], obs):
             raise Collision
+         else:
+            break
       except Collision:
          print("\nCollision of target position with obstacle:\n", pos)
          continue # Try again!
+   # Generate all other target's random positions
+   for i in range(n-1):
+      while True: 
+         try:
+            delta = rng.integers(low=-1, high=2, size=3)  # x,y,z-displacements
+            pos[i + 1] = np.min([np.max([pos[i] + delta[0], 0]), maxpos])
+            pos[i + 1 + n] = np.min([np.max([pos[i + n] + delta[1], 0]), maxpos])
+            pos[i + 1 + 2 * n] = np.min([np.max([pos[i + 2 * n] + delta[2], 0]), maxpos])
+            if isIn([pos[i + 1], pos[i + 1 + n],pos[i + 1 + 2 * n]], obs):
+               raise Collision
+            else:
+               break
+         except Collision:
+            print("\nCollision of target position with obstacle:\n", pos)
+            continue # Try again!
                 
    print("\nTarget positions:\n", pos)
 
@@ -116,7 +136,7 @@ def TargetTracking(n, maxpos, m):
    chaserpositions = [ answer.first.sample.get(f'x_{i}') for i in range(3*n) ]
    # Print the solution (chaser's positions), 
    # in array form [x_0,x_1,\dots,x_{n-1},y_0,y_1,\dots,y_{n-1},z_0,z_1,\dots,z_{n-1}]
-   print(chaserpositions)
+   print("\nChaser positions:\n",chaserpositions)
 
    # Validate solution
    smaxdx = smax**2
@@ -136,8 +156,13 @@ def TargetTracking(n, maxpos, m):
    # print run time
    # print("\nn: ", n, " Run time: ", answer.info['run_time'], " QPU Access Time: ", answer.info['qpu_access_time'])
    # print sample with lowest energy
-   print("\nSample:", answer.first.sample)
+   # print("\nSample:", answer.first.sample)
    # print([math.sqrt( (x[i]-pos[i])**2+(x[i+n]-pos[i+n])**2+(x[i+2*n]-pos[i+2*n])**2) for i in range(n)])
+   # Convert chaser's list of positions from dictionary to array
+   chaserpositions = [ answer.first.sample.get(f'x_{i}') for i in range(n) ]
+   # Print the solution (chaser's positions), 
+   # in array form [x_0, x_1,\ldost,n_{n-1}
+   print(chaserpositions)
    print("Tracking score:", answer.first.energy)
 
    return(Result, answer.info['run_time'], answer.info['qpu_access_time'])
@@ -158,12 +183,12 @@ print("---")
 for i in range(numaverages):
     T1 = 0 # Hybrid Comp Run Time
     T2 = 0 # QPU Access Time
-    numberOfPoints = (i + 1) * 10 # number of points used to caclulate this comp time avaerage
+    numberOfPoints = (i + 1) * 50 # number of points used to caclulate this comp time avaerage
     for j in range(maxnumsamples):
          # 1st param is number of points
          # 2nd param is index of maximum position
          # 3rd param number of obstacles
-         Result, RT, QPU = TargetTracking(numberOfPoints, maxpos, 2*maxpos)
+         Result, RT, QPU = TargetTracking(numberOfPoints, maxpos, 10*maxpos)
          if Result:
             numsamples = numsamples + 1    
             T1 = T1 + RT
