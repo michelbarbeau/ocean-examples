@@ -172,8 +172,7 @@ def TargetTracking(n, maxpos, m):
 
 maxpos = 10 # Size of cubic 3D space
 
-numaverages = 1 # Number of averages
-numsamples = 0 # Number of valid samples used to calculate an average
+numaverages = 10 # Number of averages
 maxnumsamples = 10 # Maximum number of valid samples used to calculate an average
 
 RTaverages = np.zeros(numaverages, dtype=float) # Hybrid Comp Run Time
@@ -183,7 +182,8 @@ print("---")
 for i in range(numaverages):
     T1 = 0 # Hybrid Comp Run Time
     T2 = 0 # QPU Access Time
-    numberOfPoints = (i + 1) * 50 # number of points used to caclulate this comp time avaerage
+    numberOfPoints = (i + 1) * 10 # number of points used to caclulate this comp time average
+    numsamples = 0 # Number of valid samples used to calculate an average
     for j in range(maxnumsamples):
          # 1st param is number of points
          # 2nd param is index of maximum position
